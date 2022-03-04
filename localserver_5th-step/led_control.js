@@ -12,6 +12,7 @@ ledon_btn.addEventListener("click", function () {
     "content-type",
     "application/x-www-form-urlencoded"
   );
+  send_data.send("params=ON");
   //POST を送信し、送信が完了した際に呼び出されるハンドラーを追加
   send_data.onloadend = function () {
     console.log(send_data.status);
@@ -26,7 +27,6 @@ ledon_btn.addEventListener("click", function () {
       console.log("error");
     }
   };
-  send_data.send("params=ON");
 });
 
 ledoff_btn.addEventListener("click", function () {
@@ -36,6 +36,7 @@ ledoff_btn.addEventListener("click", function () {
     "content-type",
     "application/x-www-form-urlencoded"
   );
+  send_data.send("params=OFF");
   //POST を送信し、送信が完了した際に呼び出されるハンドラーを追加
   send_data.onloadend = function () {
     console.log(send_data.status);
@@ -50,7 +51,6 @@ ledoff_btn.addEventListener("click", function () {
       console.log("error");
     }
   };
-  send_data.send("params=OFF");
 });
 
 //上記イベントのjQueryバージョン
