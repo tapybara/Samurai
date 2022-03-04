@@ -1,0 +1,16 @@
+button {
+  background-color: darkgrey;
+}
+
+.ledon {
+  background-color: lawngreen;
+}
+
+.ledoff {
+  color: white;
+  background-color: lawngreen;
+}
+
+h1 {
+  font-weight: bold;
+}
