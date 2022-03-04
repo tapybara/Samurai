@@ -75,13 +75,8 @@ class MyHTTPReqHandler(BaseHTTPRequestHandler):
         
         #関数ledcontrolの引数にデータを渡す
         text = ledControl(param_dict["params"])
-        """ with open(path_html, mode='r',encoding='utf-8') as f:
-            html = f.read()
-        body = html.replace('{LED}',text)
-        self.send_header("User-Agent","test1")
+        self.send_header("Access-Control-Allow-Origin", '*')
         self.end_headers()
-        self.wfile.write(body.encode())
-"""
 
 if __name__ == "__main__":
     server = HTTPServer((ip, port), MyHTTPReqHandler)

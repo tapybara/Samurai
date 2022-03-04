@@ -19,6 +19,7 @@ ledon_btn.addEventListener("click", function () {
     if (send_data.status == 200) {
       // HTTPステータス 200 で終了した場合。
       //######【課題】ここに、成功したときに修正するCSSを記載してみましょう。
+      $("#led").text("ON");
       $("#ledon").addClass("ledon");
       $("#ledoff").removeClass("ledoff");
       console.log("post request ok");
@@ -43,6 +44,7 @@ ledoff_btn.addEventListener("click", function () {
     if (send_data.status == 200) {
       // HTTPステータス 200 で終了した場合。
       //######【課題】ここに、成功したときに修正するCSSを記載してみましょう。
+      $("#led").text("OFF");
       $("#ledoff").addClass("ledoff");
       $("#ledon").removeClass("ledon");
       console.log("post request ok");
