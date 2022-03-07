@@ -38,6 +38,7 @@ def ledControl(param):
     else:
         signal = 0
     GPIO.output(LED_PIN, signal)
+    lineNotify(param)
     return param
         
 class MyHTTPReqHandler(BaseHTTPRequestHandler):
@@ -75,7 +76,6 @@ class MyHTTPReqHandler(BaseHTTPRequestHandler):
         
         #関数ledcontrolの引数にデータを渡す
         text = ledControl(param_dict["params"])
-        lineNotify()
         self.send_header("Access-Control-Allow-Origin", '*')
         self.end_headers()
 
