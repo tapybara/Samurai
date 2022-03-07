@@ -10,8 +10,8 @@ import os
 from urllib import request
 import RPi.GPIO as GPIO
 from time import sleep
-#import urllib
-#import requests
+
+from linenotify import lineNotify
 
 ip = '0.0.0.0'
 port = 8080
@@ -75,6 +75,7 @@ class MyHTTPReqHandler(BaseHTTPRequestHandler):
         
         #関数ledcontrolの引数にデータを渡す
         text = ledControl(param_dict["params"])
+        lineNotify()
         self.send_header("Access-Control-Allow-Origin", '*')
         self.end_headers()
 
