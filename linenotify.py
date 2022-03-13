@@ -1,9 +1,10 @@
+import os
 import requests
 
-def lineNotify(param):
+def lineNotify(param, text):
     url = "https://notify-api.line.me/api/notify" 
-    token = "Y385ARnvBMnIT8xVbHkab0h7G5y7Lgk9jhro0xaCohV"
+    token = os.environ["token_lineNotify"]
     headers = {"Authorization" : "Bearer "+ token} 
-    message =  f"LEDが{param}されました" 
+    message =  text 
     payload = {"message" :  message} 
     r = requests.post(url, headers = headers, params=payload)
