@@ -14,7 +14,7 @@ from time import sleep
 from linenotify import lineNotify
 
 ip = '0.0.0.0'
-port = 8080
+port = 80
 url = "http://"+ip+":"+str(port);
 LED_PIN = 21
 
@@ -38,7 +38,8 @@ def ledControl(param):
     else:
         signal = 0
     GPIO.output(LED_PIN, signal)
-    lineNotify(param,f'LEDが{param}されました')
+    text = f'LEDが{param}されました'
+    lineNotify(text)
     return param
         
 class MyHTTPReqHandler(BaseHTTPRequestHandler):
