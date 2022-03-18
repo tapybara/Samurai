@@ -14,7 +14,7 @@ from time import sleep
 from linenotify import lineNotify
 
 ip = '0.0.0.0'
-port = 8080
+port = 80
 url = "http://"+ip+":"+str(port);
 LED_PIN = 21
 
@@ -38,13 +38,14 @@ def ledControl(param):
     else:
         signal = 0
     GPIO.output(LED_PIN, signal)
-    lineNotify(param)
+    text = f'LEDが{param}されました'
+    lineNotify(text)
     return param
         
 class MyHTTPReqHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path == "/":
-            self.path = "/home/pi/Documents/Samurai/localserver_LED_control/index.html"
+            self.path = "/home/pi/Documents/Samurai/index.html"
         try:
             split_path = os.path.splitext(self.path)
             request_extension = split_path[1]

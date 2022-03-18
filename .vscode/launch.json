@@ -1,0 +1,14 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug HTTP Server",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceRoot}/server.py",
+      "console": "integratedTerminal",
+      "justMyCode": true,
+      "sudo": true
+    }
+  ]
+}
