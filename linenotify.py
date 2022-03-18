@@ -1,7 +1,7 @@
 import os
 import requests
 
-def lineNotify(param, text):
+def lineNotify(text):
     url = "https://notify-api.line.me/api/notify" 
     token = os.environ["token_lineNotify"]
     headers = {"Authorization" : "Bearer "+ token} 
