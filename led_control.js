@@ -1,4 +1,4 @@
-url = "http://192.168.1.11:8080";
+url = "http://192.168.11.11";
 
 let ledon_btn = document.getElementById("ledon");
 let ledoff_btn = document.getElementById("ledoff");
