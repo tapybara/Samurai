@@ -45,7 +45,7 @@ def ledControl(param):
 class MyHTTPReqHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path == "/":
-            self.path = "/home/pi/Documents/Samurai/index.html"
+            self.path = "/home/pi/Documents/http_server/index.html"
         try:
             split_path = os.path.splitext(self.path)
             request_extension = split_path[1]
