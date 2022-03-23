@@ -1,17 +1,19 @@
 ############################################## 
-# Webサーバの構築
-# ver1.1.0： GET/POSTの基本機能（href/drc属性:適用ver）
-#           Raspberry PiブラウザからLED操作
+# HTTPサーバーの構築
+#  Raspberry PiブラウザからLED操作
+#  Frameworkを使用しないGET/POST処理・DB操作
 ############################################## 
 from http.server import HTTPServer
 from http.server import BaseHTTPRequestHandler
+from urllib import request
 from time import sleep
 import os
-from urllib import request
 import RPi.GPIO as GPIO
-from time import sleep
+import datetime
 
 from linenotify import lineNotify
+from database.setting import session
+from database.model import *
 
 ip = '0.0.0.0'
 port = 80
@@ -41,16 +43,31 @@ def ledControl(param):
     text = f'LEDが{param}されました'
     lineNotify(text)
     return param
-        
+
+def toDicts_fromBytes(bytes_data):
+    """Change Bytes_Data to dicts_data"""
+    str_data = bytes_data.decode('utf-8')   #データをstr型に変換
+    list_data = str_data.split('=')         #データをリスト型に変換
+    return {list_data[0]:list_data[1]}      #データを辞書型に変換
+
+def add_history_info(model, id, user, refer, param_dict):
+    """Preparation registration post-datas for history DB"""
+    model.user_id = id
+    model.user = user
+    model.refer = refer
+    model.time = datetime.datetime.now()
+    model.param = param_dict["params"]
+
 class MyHTTPReqHandler(BaseHTTPRequestHandler):
+    """Processing when GET&POST communication is executed"""
     def do_GET(self):
         if self.path == "/":
-            self.path = "/home/pi/Documents/http_server/index.html"
+            self.path = "./index.html"
         try:
             split_path = os.path.splitext(self.path)
             request_extension = split_path[1]
             if request_extension != ".py":
-                with open(self.path, mode="r", encoding="utf-8") as f:
+                with open("./"+self.path, mode="r", encoding="utf-8") as f:
                     file = f.read()
                 self.send_response(200)
                 self.end_headers()
@@ -68,19 +85,22 @@ class MyHTTPReqHandler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         self.send_response(200) #POSTリクエストの受信成功を返答（ターミナルにも記載）
-        length = self.headers.get('content-length') #ヘッダーからボディーのデータ数を抽出
-        nbytes = int(length)                        #ボディーのデータ数を整数型に変換
-        param_bytes = self.rfile.read(nbytes)       #ボディーのデータ(Bytes型)を抽出
-        param_str = param_bytes.decode('utf-8')     #データをstr型に変換
-        param_list = param_str.split('=')           #データをリスト型に変換
-        param_dict = {param_list[0]:param_list[1]}  #データを辞書型に変換
+        nbyteslength = self.headers.get('content-length') #ヘッダーからボディーのデータ数を抽出
+        param_bytes = self.rfile.read(int(nbyteslength))       #ボディーのデータ(Bytes型)を抽出
+        param_dict = toDicts_fromBytes(param_bytes)
         
-        #関数ledcontrolの引数にデータを渡す
-        text = ledControl(param_dict["params"])
+        #Databaseへの情報登録
+        history = History()
+        add_history_info(history, 0, "takahito.okuyama", "Mac", param_dict)
+        session.add(history)
+        session.commit()
+
+        #LEDのON/OFF操作
+        ledControl(param_dict["params"])
         self.send_header("Access-Control-Allow-Origin", '*')
         self.end_headers()
 
 if __name__ == "__main__":
     server = HTTPServer((ip, port), MyHTTPReqHandler)
-    print("---start web server by Python---")
+    print("---start web http-_server by Python---")
     server.serve_forever()
