@@ -1,8 +1,8 @@
 import sys
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer, String, Float, DateTime
-from setting import Base
-from setting import ENGINE
+from database.setting import Base
+from database.setting import ENGINE
 
 class History(Base):
     __tablename__ = 'history'

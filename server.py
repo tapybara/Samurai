@@ -63,17 +63,20 @@ def add_history_info(model, id, user, refer, param_dict):
 class MyHTTPReqHandler(BaseHTTPRequestHandler):
     """Processing when GET&POST communication is executed"""
     def do_GET(self):
+        cwd = os.getcwd()
         if self.path == "/":
-            self.path = "./index.html"
+            self.path = cwd + "/index.html"
         try:
             split_path = os.path.splitext(self.path)
             request_extension = split_path[1]
             if request_extension != ".py":
-                with open("./"+self.path, mode="r", encoding="utf-8") as f:
+                with open(self.path, mode="r", encoding="utf-8") as f:
                     file = f.read()
-                db = session.query(history).order_by(desc(history.time)).limit(20).all() #DB(history)から最新アクセスから20個分のデータを取得
+                db = session.query(History).order_by(desc(history.time)).limit(20).all() #DB(history)から最新アクセスから20個分のデータを取得
                 for row in db:
-                    print(row)
+                    print(row.user_id)  #ユーザID
+                    print(row.user)     #ユーザ名
+
                 self.send_response(200)
                 self.end_headers()
                 if (request_extension == '.html'):
