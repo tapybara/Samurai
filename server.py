@@ -10,6 +10,7 @@ from time import sleep
 import os
 import RPi.GPIO as GPIO
 import datetime
+from sqlalchemy import desc, asc
 
 from linenotify import lineNotify
 from database.setting import session
@@ -19,6 +20,7 @@ ip = '0.0.0.0'
 port = 80
 url = "http://"+ip+":"+str(port);
 LED_PIN = 21
+history = History()
 
 def getLedstatus():
     """Read out the LED current status"""
@@ -69,10 +71,14 @@ class MyHTTPReqHandler(BaseHTTPRequestHandler):
             if request_extension != ".py":
                 with open("./"+self.path, mode="r", encoding="utf-8") as f:
                     file = f.read()
+                db = session.query(history).order_by(desc(history.time)).limit(20).all() #DB(history)から最新アクセスから20個分のデータを取得
+                for row in db:
+                    print(row)
                 self.send_response(200)
                 self.end_headers()
                 if (request_extension == '.html'):
                     file = file.replace('{LED}',getLedstatus())
+
                 self.wfile.write(file.encode())
             else:
                 f = "File not found"
@@ -90,7 +96,6 @@ class MyHTTPReqHandler(BaseHTTPRequestHandler):
         param_dict = toDicts_fromBytes(param_bytes)
         
         #Databaseへの情報登録
-        history = History()
         add_history_info(history, 0, "takahito.okuyama", "Mac", param_dict)
         session.add(history)
         session.commit()

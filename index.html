@@ -12,8 +12,18 @@
     <form>
       <button type="button" id="ledon" value="ON">ON</button>
       <button type="button" id="ledoff" value="OFF">OFF</button>
+      <span id="text">現在のLEDの状態は<span id="led">{LED}</span>です</span>
     </form>
-    <div id="text">現在のLEDの状態は<span id="led">{LED}</span>です</div>
+    <br>
+    <table>
+      <tr>
+        <th>ID</th>
+        <th>ユーザー名</th>
+        <th>アクセス元IP</th>
+        <th>アクセス日時</th>
+        <th>送信内容</th>
+      </tr>
+
     <script src="./lib/jquery-3.6.0.min.js"></script>
     <script src="./led_control.js"></script>
   </body>
