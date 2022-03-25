@@ -28,10 +28,10 @@ def getLedstatus():
     GPIO.setup(LED_PIN, GPIO.IN)
     signal = GPIO.input(LED_PIN)
     if(signal==1):
-        text="ON"
+        status="ON"
     else:
-        text="OFF"
-    return text
+        status="OFF"
+    return status
 
 def ledControl(param):
     """Controlling LED with browser POST communication"""
@@ -42,8 +42,8 @@ def ledControl(param):
     else:
         signal = 0
     GPIO.output(LED_PIN, signal)
-    text = f'LEDが{param}されました'
-    lineNotify(text)
+    comment = f'LEDが{param}されました'
+    lineNotify(comment)
     return param
 
 def toDicts_fromBytes(bytes_data):
@@ -52,54 +52,67 @@ def toDicts_fromBytes(bytes_data):
     list_data = str_data.split('=')         #データをリスト型に変換
     return {list_data[0]:list_data[1]}      #データを辞書型に変換
 
-def add_history_info(model, id, user, refer, param_dict):
+def add_DBinfo(model, id, user, refer, param_dict):
     """Preparation registration post-datas for history DB"""
-    model.user_id = id
+    model.id = id
     model.user = user
     model.refer = refer
     model.time = datetime.datetime.now()
     model.param = param_dict["params"]
-
+    
+def get_DBinfo(model):
+    "#DB(model)から最新アクセスから最大20個分のレコードとレコード数を取得"
+    records = session.query(model).order_by(desc(model.time)).limit(20).all() 
+    return records
+    
+def generate_tagFromRecord(records):
+    "#取得した20個のレコードからHTMLタグを生成"
+    text = ""   #HTML生成テキストの初期化
+    for record in records:
+        text += "<tr>"
+        text += "<td>"+str(record.user_id)+"</td>"
+        text += "<td>"+str(record.user)+"</td>"
+        text += "<td>"+str(record.refer)+"</td>"
+        text += "<td>"+str(record.time)+"</td>"
+        text += "<td>"+str(record.param)+"</td>"
+        text += "</tr>"
+    return text
+    
 class MyHTTPReqHandler(BaseHTTPRequestHandler):
     """Processing when GET&POST communication is executed"""
     def do_GET(self):
-        cwd = os.getcwd()
         if self.path == "/":
-            self.path = cwd + "/index.html"
-        try:
-            split_path = os.path.splitext(self.path)
-            request_extension = split_path[1]
-            if request_extension != ".py":
-                with open(self.path, mode="r", encoding="utf-8") as f:
-                    file = f.read()
-                db = session.query(History).order_by(desc(history.time)).limit(20).all() #DB(history)から最新アクセスから20個分のデータを取得
-                for row in db:
-                    print(row.user_id)  #ユーザID
-                    print(row.user)     #ユーザ名
-
-                self.send_response(200)
-                self.end_headers()
-                if (request_extension == '.html'):
-                    file = file.replace('{LED}',getLedstatus())
-
-                self.wfile.write(file.encode())
-            else:
-                f = "File not found"
-                print(f'{self.path}が見つかりませんでした。')
-                self.send_error(404,f)
-        except:
+            self.path = "./index.html"
+        # try:
+        split_path = os.path.splitext(self.path)
+        request_extension = split_path[1]
+        if request_extension != ".py":
+            with open("./"+self.path, mode="r", encoding="utf-8") as f:
+                file = f.read()
+            self.send_response(200)
+            self.end_headers()
+            if (request_extension == '.html'):
+                records = get_DBinfo(History)
+                file = file.replace('{database}',generate_tagFromRecord(records))
+                file = file.replace('{LED}',getLedstatus())
+            self.wfile.write(file.encode())
+        else:
             f = "File not found"
             print(f'{self.path}が見つかりませんでした。')
             self.send_error(404,f)
+        # except:
+            # f = "File not found"
+            # print(f'{self.path}が見つかりませんでした。')
+            # self.send_error(404,f)
 
     def do_POST(self):
         self.send_response(200) #POSTリクエストの受信成功を返答（ターミナルにも記載）
-        nbyteslength = self.headers.get('content-length') #ヘッダーからボディーのデータ数を抽出
+        nbyteslength = self.headers.get('content-length')      #ヘッダーからボディーのデータ数を抽出
         param_bytes = self.rfile.read(int(nbyteslength))       #ボディーのデータ(Bytes型)を抽出
         param_dict = toDicts_fromBytes(param_bytes)
         
         #Databaseへの情報登録
-        add_history_info(history, 0, "takahito.okuyama", "Mac", param_dict)
+        add_DBinfo(history, 0, "takahito.okuyama", "Mac", param_dict)
         session.add(history)
         session.commit()
 

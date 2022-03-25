@@ -6,10 +6,10 @@ from database.setting import ENGINE
 
 class History(Base):
     __tablename__ = 'history'
-    user_id = Column('user_id', Integer, primary_key = True)    #ユーザーID
-    user = Column('user', String(60), nullable=False)               #ユーザー名
-    refer = Column('refer', String(20), nullable=False)             #アクセス元IP
-    time = Column('time', DateTime, nullable=False)             #アクセス日時
+    user_id = Column('user_id', Integer, primary_key = True)          #ID
+    user = Column('user', String(60), nullable=False)           #ユーザー名
+    refer =Column('refer', String(20), nullable=False)         #アクセス元デバイス情報
+    time = Column('time', DateTime, nullable=False)             #DB登録日時
     param = Column('param', String(5))                             #送信内容（ON/OFF情報）
 
 class User(Base):

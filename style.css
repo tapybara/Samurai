@@ -29,3 +29,7 @@ table tr {
 table tr:hover {
   background-color: #d4f0fd;
 }
+
+table td {
+  text-align: center;
+}
