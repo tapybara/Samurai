@@ -20,7 +20,6 @@ ip = '0.0.0.0'
 port = 80
 url = "http://"+ip+":"+str(port);
 LED_PIN = 21
-history = History()
 
 def getLedstatus():
     """Read out the LED current status"""
@@ -61,20 +60,19 @@ def add_DBinfo(model, id, user, refer, param_dict):
     model.param = param_dict["params"]
     
 def get_DBinfo(model):
-    "#DB(model)から最新アクセスから最大20個分のレコードとレコード数を取得"
-    records = session.query(model).order_by(desc(model.time)).limit(20).all() 
+    "#DB(model)から最新アクセスから最大10個分のレコードとレコード数を取得"
+    records = session.query(model).order_by(desc(model.time)).limit(10).all() 
     return records
     
 def generate_tagFromRecord(records):
-    "#取得した20個のレコードからHTMLタグを生成"
+    "#取得したレコードからHTMLタグを生成"
     text = ""   #HTML生成テキストの初期化
     for record in records:
         text += "<tr>"
-        text += "<td>"+str(record.user_id)+"</td>"
-        text += "<td>"+str(record.user)+"</td>"
-        text += "<td>"+str(record.refer)+"</td>"
         text += "<td>"+str(record.time)+"</td>"
+        text += "<td>"+str(record.user)+"</td>"
         text += "<td>"+str(record.param)+"</td>"
+        text += "<td>"+str(record.refer)+"</td>"
         text += "</tr>"
     return text
     
@@ -83,27 +81,23 @@ class MyHTTPReqHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path == "/":
             self.path = "./index.html"
-        # try:
-        split_path = os.path.splitext(self.path)
-        request_extension = split_path[1]
-        if request_extension != ".py":
-            with open("./"+self.path, mode="r", encoding="utf-8") as f:
-                file = f.read()
-            self.send_response(200)
-            self.end_headers()
-            if (request_extension == '.html'):
-                records = get_DBinfo(History)
-                file = file.replace('{database}',generate_tagFromRecord(records))
-                file = file.replace('{LED}',getLedstatus())
-            self.wfile.write(file.encode())
-        else:
+        try:
+            split_path = os.path.splitext(self.path)
+            request_extension = split_path[1]
+            if request_extension != ".py":
+                with open("./"+self.path, mode="r", encoding="utf-8") as f:
+                    file = f.read()
+                self.send_response(200)
+                self.end_headers()
+                if (request_extension == '.html'):
+                    records = get_DBinfo(History)
+                    file = file.replace('{database}',generate_tagFromRecord(records))
+                    file = file.replace('{LED}',getLedstatus())
+                self.wfile.write(file.encode())
+        except FileNotFoundError:
             f = "File not found"
             print(f'{self.path}が見つかりませんでした。')
             self.send_error(404,f)
-        # except:
-            # f = "File not found"
-            # print(f'{self.path}が見つかりませんでした。')
-            # self.send_error(404,f)
 
     def do_POST(self):
         self.send_response(200) #POSTリクエストの受信成功を返答（ターミナルにも記載）
@@ -112,6 +106,7 @@ class MyHTTPReqHandler(BaseHTTPRequestHandler):
         param_dict = toDicts_fromBytes(param_bytes)
         
         #Databaseへの情報登録
+        history = History()
         add_DBinfo(history, 0, "takahito.okuyama", "Mac", param_dict)
         session.add(history)
         session.commit()
