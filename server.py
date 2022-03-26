@@ -16,9 +16,7 @@ from linenotify import lineNotify
 from database.setting import session
 from database.model import *
 
-ip = '0.0.0.0'
 port = 80
-url = "http://"+ip+":"+str(port);
 LED_PIN = 21
 
 def getLedstatus():
@@ -131,6 +129,6 @@ class MyHTTPReqHandler(BaseHTTPRequestHandler):
         self.wfile.write(text.encode())
 
 if __name__ == "__main__":
-    server = HTTPServer((ip, port), MyHTTPReqHandler)
+    server = HTTPServer(("", port), MyHTTPReqHandler)
     print("---start web http-_server by Python---")
     server.serve_forever()
