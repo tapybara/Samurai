@@ -1,6 +1,6 @@
 ############################################## 
 # HTTPサーバーの構築
-#  Raspberry PiブラウザからLED操作
+#  ブラウザからRaspberry Piを操作
 #  Frameworkを使用しないGET/POST処理・DB操作
 ############################################## 
 from http.server import HTTPServer
@@ -67,6 +67,14 @@ def get_DBinfo(model):
 def generate_tagFromRecord(records):
     "#取得したレコードからHTMLタグを生成"
     text = ""   #HTML生成テキストの初期化
+    text += """
+    <tr>
+    <th>アクセス日時</th>
+    <th>ユーザー名</th>
+    <th>送信内容</th>
+    <th>アクセス元IP</th>
+    </tr>
+    """
     for record in records:
         text += "<tr>"
         text += "<td>"+str(record.time)+"</td>"
@@ -87,22 +95,23 @@ class MyHTTPReqHandler(BaseHTTPRequestHandler):
             if request_extension != ".py":
                 with open("./"+self.path, mode="r", encoding="utf-8") as f:
                     file = f.read()
-                self.send_response(200)
-                self.end_headers()
-                if (request_extension == '.html'):
-                    records = get_DBinfo(History)
-                    file = file.replace('{database}',generate_tagFromRecord(records))
-                    file = file.replace('{LED}',getLedstatus())
-                self.wfile.write(file.encode())
         except FileNotFoundError:
-            f = "File not found"
             print(f'{self.path}が見つかりませんでした。')
+            f = "File not found"
             self.send_error(404,f)
+        else:
+            self.send_response(200)
+            self.end_headers()
+            if (request_extension == '.html'):
+                records = get_DBinfo(History)
+                file = file.replace('{database}',generate_tagFromRecord(records))
+                file = file.replace('{LED}',getLedstatus())
+            self.wfile.write(file.encode())
 
     def do_POST(self):
         self.send_response(200) #POSTリクエストの受信成功を返答（ターミナルにも記載）
-        nbyteslength = self.headers.get('content-length')      #ヘッダーからボディーのデータ数を抽出
-        param_bytes = self.rfile.read(int(nbyteslength))       #ボディーのデータ(Bytes型)を抽出
+        content_len = int(self.headers.get('content-length'))      #ヘッダーからボディーのデータ数を抽出
+        param_bytes = self.rfile.read(content_len)       #ボディーのデータ(Bytes型)を抽出
         param_dict = toDicts_fromBytes(param_bytes)
         
         #Databaseへの情報登録
@@ -113,8 +122,13 @@ class MyHTTPReqHandler(BaseHTTPRequestHandler):
 
         #LEDのON/OFF操作
         ledControl(param_dict["params"])
+
+        #レスポンス
         self.send_header("Access-Control-Allow-Origin", '*')
         self.end_headers()
+        records = get_DBinfo(History)
+        text = generate_tagFromRecord(records)
+        self.wfile.write(text.encode())
 
 if __name__ == "__main__":
     server = HTTPServer((ip, port), MyHTTPReqHandler)
