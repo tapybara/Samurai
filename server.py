@@ -11,13 +11,44 @@ import os
 import RPi.GPIO as GPIO
 import datetime
 from sqlalchemy import desc, asc
+import requests
 
 from linenotify import lineNotify
 from database.setting import session
 from database.model import *
 
-port = 80
+PORT = 80
 LED_PIN = 21
+
+WEATHER_URL = "https://api.openweathermap.org/data/2.5/weather"
+WEATHER_KEY = os.getenv("WEATHER_API_KEY")
+
+def getAPIData(endpoint, headers, params):
+    """Get API data including type conversion from Json to dictionary type"""
+    result = requests.get(endpoint, headers=headers, params=params)
+    return result.json()     #辞書型に変換
+
+def getWheatherInfo(city):
+    """Get weather info via Open Weather API
+    ※将来的には、DB[user]テーブルに登録されたアドレス情報を読み出して設定
+    """
+    weather_dict = {}
+    weather_data = getAPIData(WEATHER_URL,{},
+        {
+        "appid":WEATHER_KEY,
+        "q":city,               #都市：引数で入力
+        "units":"metric",       #単位：摂氏にて情報抽出
+        "lang":"ja"             #言語：日本語
+        }
+    )
+    time = datetime.datetime.now()
+    weather_dict["time"] = time.strftime("%Y/%m/%d %H:%M:%S") 
+    weather_dict["lat"] = weather_data["coord"]["lat"] #緯度
+    weather_dict["lon"] = weather_data["coord"]["lon"] #軽度
+    weather_dict["temp"] = weather_data["main"]["temp"] #温度
+    weather_dict["humidity"] = weather_data["main"]["humidity"] #湿度
+    weather_dict["weather"] = weather_data["weather"][0]["description"] #天気条件
+    return weather_dict 
 
 def getLedStatus():
     """Read out the LED current status"""
@@ -66,7 +97,7 @@ def generateTagFromRecord(records):
         text += "<td>"+str(record.refer)+"</td>"
         text += "</tr>"
     return text
-    
+
 class MyHTTPReqHandler(BaseHTTPRequestHandler):
     """Processing when GET&POST communication is executed"""
     def do_GET(self):
@@ -86,6 +117,11 @@ class MyHTTPReqHandler(BaseHTTPRequestHandler):
             self.send_response(200)
             self.end_headers()
             if (request_extension == '.html'):
+                #天気API情報による書き換え
+                weather_dict = getWheatherInfo("Tokyo")
+                for key, value in weather_dict.items():
+                    file = file.replace('{'+key+'}',str(value))
+                #DB登録情報の抽出
                 records = session.query(History).order_by(desc(History.time)).limit(10).all() 
                 file = file.replace('{database}',generateTagFromRecord(records))
                 file = file.replace('{LED}',getLedStatus())
@@ -113,6 +149,6 @@ class MyHTTPReqHandler(BaseHTTPRequestHandler):
         self.wfile.write(text.encode())
 
 if __name__ == "__main__":
-    server = HTTPServer(("", port), MyHTTPReqHandler)
+    server = HTTPServer(("", PORT), MyHTTPReqHandler)
     print("---start web http-_server by Python---")
     server.serve_forever()
