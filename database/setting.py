@@ -6,7 +6,7 @@ from sqlalchemy.ext.declarative import declarative_base
 dialect = "mysql"                       #DBの種類指定
 #driver = "mysqldb"                     #DBに接続するためのドライバー指定：指定なし＝"default" DBAPI
 username = os.getenv("DB_USER")         #DBへの接続可能なユーザ名
-password = os.getenv("DB_ACCESS_PASS")  #DBに接続するためのパスワード
+password = os.getenv("DB_PASS")  #DBに接続するためのパスワード
 host = "localhost"                      #ホスト名の指定：localhost, IPアドレス等
 #port = "3306"                          #ポート指定
 database = "LED_CONTROL_DB"             #接続するDBの名の指定

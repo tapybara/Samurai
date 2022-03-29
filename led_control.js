@@ -2,6 +2,8 @@ url = "http://192.168.11.11";
 
 let ledon_btn = document.getElementById("ledon");
 let ledoff_btn = document.getElementById("ledoff");
+const LED_ON = "ON";
+const LED_OFF = "OFF";
 
 function httpHandler(param) {
   const send_data = new XMLHttpRequest();
@@ -18,10 +20,10 @@ function httpHandler(param) {
       // HTTPステータス 200 で終了した場合。
       //######【課題】ここに、成功したときに修正するCSSを記載してみましょう。
       $("#led").text(param);
-      if (param == "ON") {
+      if (param == LED_ON) {
         $("#ledon").addClass("ledon");
         $("#ledoff").removeClass("ledoff");
-      } else if (param == "OFF") {
+      } else if (param == LED_OFF) {
         $("#ledoff").addClass("ledoff");
         $("#ledon").removeClass("ledon");
       }
@@ -36,11 +38,11 @@ function httpHandler(param) {
 }
 
 ledon_btn.addEventListener("click", function () {
-  httpHandler("ON");
+  httpHandler(LED_ON);
 });
 
 ledoff_btn.addEventListener("click", function () {
-  httpHandler("OFF");
+  httpHandler(LED_OFF);
 });
 
 //上記イベントのjQueryバージョン

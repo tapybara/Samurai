@@ -19,16 +19,15 @@ from database.model import *
 port = 80
 LED_PIN = 21
 
-def getLedstatus():
+def getLedStatus():
     """Read out the LED current status"""
     GPIO.setmode(GPIO.BCM)
     GPIO.setup(LED_PIN, GPIO.IN)
     signal = GPIO.input(LED_PIN)
     if(signal==1):
-        status="ON"
+        return "ON"
     else:
-        status="OFF"
-    return status
+        return "OFF"
 
 def ledControl(param):
     """Controlling LED with browser POST communication"""
@@ -39,30 +38,16 @@ def ledControl(param):
     else:
         signal = 0
     GPIO.output(LED_PIN, signal)
-    comment = f'LEDが{param}されました'
-    lineNotify(comment)
+    lineNotify(f'LEDが{param}されました')
     return param
 
-def toDicts_fromBytes(bytes_data):
+def toDictsFromByte(bytes_data):
     """Change Bytes_Data to dicts_data"""
     str_data = bytes_data.decode('utf-8')   #データをstr型に変換
     list_data = str_data.split('=')         #データをリスト型に変換
     return {list_data[0]:list_data[1]}      #データを辞書型に変換
-
-def add_DBinfo(model, id, user, refer, param_dict):
-    """Preparation registration post-datas for history DB"""
-    model.id = id
-    model.user = user
-    model.refer = refer
-    model.time = datetime.datetime.now()
-    model.param = param_dict["params"]
     
-def get_DBinfo(model):
-    "#DB(model)から最新アクセスから最大10個分のレコードとレコード数を取得"
-    records = session.query(model).order_by(desc(model.time)).limit(10).all() 
-    return records
-    
-def generate_tagFromRecord(records):
+def generateTagFromRecord(records):
     "#取得したレコードからHTMLタグを生成"
     text = ""   #HTML生成テキストの初期化
     text += """
@@ -101,20 +86,19 @@ class MyHTTPReqHandler(BaseHTTPRequestHandler):
             self.send_response(200)
             self.end_headers()
             if (request_extension == '.html'):
-                records = get_DBinfo(History)
-                file = file.replace('{database}',generate_tagFromRecord(records))
-                file = file.replace('{LED}',getLedstatus())
+                records = session.query(History).order_by(desc(History.time)).limit(10).all() 
+                file = file.replace('{database}',generateTagFromRecord(records))
+                file = file.replace('{LED}',getLedStatus())
             self.wfile.write(file.encode())
 
     def do_POST(self):
         self.send_response(200) #POSTリクエストの受信成功を返答（ターミナルにも記載）
         content_len = int(self.headers.get('content-length'))      #ヘッダーからボディーのデータ数を抽出
         param_bytes = self.rfile.read(content_len)       #ボディーのデータ(Bytes型)を抽出
-        param_dict = toDicts_fromBytes(param_bytes)
+        param_dict = toDictsFromByte(param_bytes)
         
         #Databaseへの情報登録
-        history = History()
-        add_DBinfo(history, 0, "takahito.okuyama", "Mac", param_dict)
+        history = History(0, "takahito.okuyama", "Mac", datetime.datetime.now(), param_dict["params"])
         session.add(history)
         session.commit()
 
@@ -124,8 +108,8 @@ class MyHTTPReqHandler(BaseHTTPRequestHandler):
         #レスポンス
         self.send_header("Access-Control-Allow-Origin", '*')
         self.end_headers()
-        records = get_DBinfo(History)
-        text = generate_tagFromRecord(records)
+        records = session.query(History).order_by(desc(History.time)).limit(10).all()
+        text = generateTagFromRecord(records)
         self.wfile.write(text.encode())
 
 if __name__ == "__main__":
