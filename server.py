@@ -5,13 +5,15 @@
 ############################################## 
 from http.server import HTTPServer
 from http.server import BaseHTTPRequestHandler
+from sqlalchemy import desc, asc
 from urllib import request
 from time import sleep
+from requests.exceptions import RequestException
 import os
 import RPi.GPIO as GPIO
 import datetime
-from sqlalchemy import desc, asc
 import requests
+import logging
 
 from linenotify import lineNotify
 from database.setting import session
@@ -25,8 +27,14 @@ WEATHER_KEY = os.getenv("WEATHER_API_KEY")
 
 def getAPIData(endpoint, headers, params):
     """Get API data including type conversion from Json to dictionary type"""
+    logger = logging.getLogger(__name__)
     result = requests.get(endpoint, headers=headers, params=params)
-    return result.json()     #辞書型に変換
+    try:
+        result.raise_for_status()
+    except RequestException as e:
+        logger.exception("request fialed. error=(%s)", e.response.text)
+    else:
+        return result.json()     #辞書型に変換
 
 def getWheatherInfo(city):
     """Get weather info via Open Weather API
@@ -79,7 +87,7 @@ def toDictsFromByte(bytes_data):
     return {list_data[0]:list_data[1]}      #データを辞書型に変換
     
 def generateTagFromRecord(records):
-    "#取得したレコードからHTMLタグを生成"
+    """#取得したレコードからHTMLタグを生成"""
     text = ""   #HTML生成テキストの初期化
     text += """
     <tr>
