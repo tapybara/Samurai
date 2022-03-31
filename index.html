@@ -2,27 +2,14 @@
 <html lang="ja">
   <head>
     <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>LED CONTROL test</title>
-    <link rel="stylesheet" href="./style.css" />
+    <title>LOGIN</title>
   </head>
   <body>
-    <h1>LED CONTROL GUI</h1>
-    <div class="weather">
-      [東京都]{time}現在の天気は{weather}で、温度は摂氏{temp}℃、湿度は{humidity}%です
-    </div>
-    <form>
-      <button type="button" id="ledon" value="ON">ON</button>
-      <button type="button" id="ledoff" value="OFF">OFF</button>
-      <span id="text">現在のLEDの状態は<span id="led">{LED}</span>です</span>
+    <h1>ログイン</h1>
+    <form method="post" id="login" action="./top.html">
+      <p>USER ID : <input type="text" name="user_id" size="20" /></p>
+      <p>PASSWORD: <input type="password" name="user_password" size="20" /></p>
+      <p><input type="submit" value="ログイン" /></p>
     </form>
-    <br />
-    <table class="db_table">
-      {database}
-    </table>
-
-    <script src="./lib/jquery-3.6.0.min.js"></script>
-    <script src="./led_control.js"></script>
   </body>
 </html>
