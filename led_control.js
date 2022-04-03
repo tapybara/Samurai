@@ -1,58 +1,52 @@
-url = "http://192.168.11.11";
-
 let ledon_btn = document.getElementById("ledon");
 let ledoff_btn = document.getElementById("ledoff");
 const LED_ON = "ON";
 const LED_OFF = "OFF";
 
-function httpHandler(param) {
+url = "http://192.168.11.11";
+
+const ledCssChange = (ledstatus) => {
+  /* ボタンを押した時に適用CSSを変更メソッド */
+  $("#led").text(ledstatus);
+  if (ledstatus == LED_ON) {
+    $("#ledon").addClass("ledon");
+    $("#ledoff").removeClass("ledoff");
+  } else if (ledstatus == LED_OFF) {
+    $("#ledoff").addClass("ledoff");
+    $("#ledon").removeClass("ledon");
+  }
+};
+
+const httpHandler = (post_content) => {
+  /* POST送信の処理メソッド（DBリスト更新・LEDボタンCSS変更）*/
+  const led_status = post_content.split("=")[1];
   const send_data = new XMLHttpRequest();
   send_data.open("POST", url, true);
   send_data.setRequestHeader(
     "content-type",
     "application/x-www-form-urlencoded"
   );
-  send_data.send("params=ON");
-  //POST を送信し、送信が完了した際に呼び出されるハンドラーを追加
+  send_data.send(post_content);
+
   send_data.onloadend = function () {
-    console.log(send_data.status);
+    /* POST送信完了後の処理 */
+    console.log(send_data.status, "ldebtn_control.js");
     if (send_data.status == 200) {
-      // HTTPステータス 200 で終了した場合。
-      //######【課題】ここに、成功したときに修正するCSSを記載してみましょう。
-      $("#led").text(param);
-      if (param == LED_ON) {
-        $("#ledon").addClass("ledon");
-        $("#ledoff").removeClass("ledoff");
-      } else if (param == LED_OFF) {
-        $("#ledoff").addClass("ledoff");
-        $("#ledon").removeClass("ledon");
-      }
-      console.log("post request ok");
-      db_tag = send_data.responseText;
-      $(".db_table").html(db_tag);
+      ledCssChange(led_status); //CSS変更
+      res_tag = send_data.responseText; //サーバーレスポンス情報の取得
+      $(".db_table").html(res_tag); //DBリスト更新
     } else {
-      // エラーで終了した場合。
-      console.log("error");
+      alert(`LEDを${led_status}に出来ませんでした。`);
     }
   };
-}
+};
 
 ledon_btn.addEventListener("click", function () {
-  httpHandler(LED_ON);
+  //ONボタン押下時のPOSTリクエストと成功時の処理
+  httpHandler("params=ON");
 });
 
 ledoff_btn.addEventListener("click", function () {
-  httpHandler(LED_OFF);
+  //OFFボタン押下時のPOSTリクエストと成功時の処理
+  httpHandler("params=OFF");
 });
-
-//上記イベントのjQueryバージョン
-/*$.post(url, { value: "ON" }, () => {
-  console.log("SUCCESS LED ON");
-  $(this).css({ "background-color": "lawngree", color: "white" });
-});*/
-
-//上記イベントのjQueryバージョン
-/*$.post(url, { value: "OFF" }, () => {
-  console.log("SUCCESS LED OFF");
-  $(this).css({ "background-color": "red", color: "white" });
-});*/

@@ -4,15 +4,24 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>LED CONTROL test</title>
+    <title>LED CONTROL</title>
     <link rel="stylesheet" href="./style.css" />
   </head>
   <body>
-    <h1>LED CONTROL GUI</h1>
+    <h1 class="title">LED CONTROL GUI</h1>
     <div class="weather">
+      <div class="imgbox">
+        <!-- 01dの部分がお天気アイコンのid -->
+        <!-- http://openweathermap.org/img/w/01d.png -->
+        <img
+          class="weather-img"
+          id="weather-img"
+          src="http://openweathermap.org/img/w/{icon}.png"
+        />
+      </div>
       [東京都]{time}現在の天気は{weather}で、温度は摂氏{temp}℃、湿度は{humidity}%です
     </div>
-    <form>
+    <form class="button_control">
       <button type="button" id="ledon" value="ON">ON</button>
       <button type="button" id="ledoff" value="OFF">OFF</button>
       <span id="text">現在のLEDの状態は<span id="led">{LED}</span>です</span>
@@ -22,6 +31,6 @@
       {database}
     </table>
     <script src="./lib/jquery-3.6.0.min.js"></script>
-    <script src="./http_handler.js"></script>
+    <script src="./led_control.js"></script>
   </body>
 </html>

@@ -6,6 +6,7 @@
 from http.server import HTTPServer
 from http.server import BaseHTTPRequestHandler
 from sqlalchemy import desc, asc
+from sqlalchemy.orm.exc import NoResultFound
 from jinja2 import Template, Environment, FileSystemLoader
 from time import sleep
 from requests.exceptions import RequestException
@@ -13,6 +14,7 @@ import os
 import RPi.GPIO as GPIO
 import datetime
 import requests
+import urllib.parse
 import logging
 
 from linenotify import lineNotify
@@ -57,6 +59,7 @@ def getWheatherInfo(city):
     weather_dict["temp"] = weather_data["main"]["temp"] #温度
     weather_dict["humidity"] = weather_data["main"]["humidity"] #湿度
     weather_dict["weather"] = weather_data["weather"][0]["description"] #天気条件
+    weather_dict["icon"] = weather_data["weather"][0]["icon"] #天気アイコンID
     return weather_dict 
 
 def getLedStatus():
@@ -102,7 +105,7 @@ def generateTagFromRecord(records, *tmpl_name):
     text = ""
     text += """
     <tr>
-        <th>{{アクセス日時</th>
+        <th>アクセス日時</th>
         <th>ユーザー名</th>
         <th>送信内容</th>
         <th>アクセス元IP</th>
@@ -150,10 +153,28 @@ class MyHTTPReqHandler(BaseHTTPRequestHandler):
     def do_POST(self):
         self.send_response(200) #POSTリクエストの受信成功を返答（ターミナルにも記載）
         content_len = int(self.headers.get('content-length'))      #ヘッダーからボディーのデータ数を抽出
-        param_bytes = self.rfile.read(content_len)       #ボディーのデータ(Bytes型)を抽出
+        param_bytes = self.rfile.read(content_len)                 #ボディーのデータ(Bytes型)を抽出
         param_dict = toDictsFromBody(param_bytes)
-        
-        if(self.path == "/"):
+        refer = urllib.parse.urlparse(self.headers.get('Referer'))
+
+        if(refer.path == "/"):
+            #ログインの入力情報とデータベースとの照合（ユーザー認証）
+            try:
+                record = session.query(User).filter(User.user==param_dict["user_id"]).one()
+            except NoResultFound:
+                #例外が発生した場合はexception種類に応じて追記
+                print("USER IDに該当するデータが見つかりませんでした。")
+                return
+            else:
+                #ユーザー認証が成功した場合の処理
+                if record.password == param_dict["user_password"]:
+                    print("Successfully logged in.")
+                    res_body = "login_success"
+                #ユーザー認証が成功した場合の処理
+                else:
+                    print("The login attempt failed. Password is invalid")
+                    res_body = "login_error"
+        else:
             #Databaseへの情報登録
             history = History(0, "takahito.okuyama", "Mac", datetime.datetime.now(), param_dict["params"])
             session.add(history)
@@ -164,19 +185,10 @@ class MyHTTPReqHandler(BaseHTTPRequestHandler):
 
             #レスポンス
             records = session.query(History).order_by(desc(History.time)).limit(10).all()
-            html = generateTagFromRecord(records,"accesslist.html")
-            self.send_header("Access-Control-Allow-Origin", '*')
-            self.end_headers()
-            self.wfile.write(html.encode())
-        else:
-            #ログインの入力情報とデータベースとの照合（ユーザー認証）
-            record = session.query(User).filter(User.user==param_dict["user_id"]).one()
-            #ユーザー認証が失敗した場合の処理（ポップアップウィンドウでアラート？）
-            if record.password != param_dict["user_password"]:
-                print("Login Error")
-            #ユーザー認証が成功した場合の処理
-            else:
-                print("Success login")
+            res_body = generateTagFromRecord(records,"accesslist.html")
+        self.send_header("Access-Control-Allow-Origin", '*')
+        self.end_headers()
+        self.wfile.write(res_body.encode())
 
 if __name__ == "__main__":
     server = HTTPServer(("", PORT), MyHTTPReqHandler)

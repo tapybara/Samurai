@@ -1,5 +1,19 @@
+@import url("https://fonts.googleapis.com/css2?family=Josefin+Sans&display=swap");
+
+.title {
+  display: flex;
+  overflow: hidden;
+  color: #aa8f7b;
+  font-family: "Josefin Sans", sans-serif;
+}
+
+.button_control {
+  margin-top: 1rem;
+}
+
 button {
   background-color: darkgrey;
+  margin-right: 0.3rem;
 }
 
 .ledon {
@@ -16,9 +30,32 @@ h1 {
 }
 
 .weather {
-  margin-right: 10%;
-  font-size: 1rem;
-  width: 100%;
+  position: relative;
+  overflow: hidden;
+  padding: 1.5rem 2rem 1.5rem 130px;
+  border: 2px solid #414141;
+}
+
+.weather:before {
+  position: absolute;
+  top: -150%;
+  left: -100px;
+  width: 200px;
+  height: 300%;
+  content: "";
+  -webkit-transform: rotate(25deg);
+  transform: rotate(25deg);
+  background: #414141;
+}
+.imgbox {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.weather-img {
+  width: 80px;
+  height: auto;
 }
 
 table {
