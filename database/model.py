@@ -21,10 +21,12 @@ class History(Base):
 
 class User(Base):
     __tablename__ = 'user'
-    id = Column('id', Integer, primary_key = True)    #ユーザーID
+    id = Column('id', Integer, primary_key = True)              #ユーザーID
     user = Column('user', String(60), nullable=False)           #ユーザー名
     password = Column('password', String(20), nullable=False)   #パスワード
     reg_date = Column('reg_date', DateTime, nullable=False)     #登録日
+    address = Column('address', String(483), nullable=False)    #住所情報
+    phone_num = Column('phone_num', String(21), nullable=False) #電話番号
 
 def main(args):
     Base.metadata.create_all(bind=ENGINE)   #Baseを継承しているテーブル郡の一括作成

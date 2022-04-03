@@ -6,13 +6,15 @@
 from http.server import HTTPServer
 from http.server import BaseHTTPRequestHandler
 from sqlalchemy import desc, asc
-from urllib import request
+from sqlalchemy.orm.exc import NoResultFound
+from jinja2 import Template, Environment, FileSystemLoader
 from time import sleep
 from requests.exceptions import RequestException
 import os
 import RPi.GPIO as GPIO
 import datetime
 import requests
+import urllib.parse
 import logging
 
 from linenotify import lineNotify
@@ -25,6 +27,7 @@ LED_PIN = 21
 WEATHER_URL = "https://api.openweathermap.org/data/2.5/weather"
 WEATHER_KEY = os.getenv("WEATHER_API_KEY")
 
+    
 def getAPIData(endpoint, headers, params):
     """Get API data including type conversion from Json to dictionary type"""
     logger = logging.getLogger(__name__)
@@ -56,6 +59,7 @@ def getWheatherInfo(city):
     weather_dict["temp"] = weather_data["main"]["temp"] #温度
     weather_dict["humidity"] = weather_data["main"]["humidity"] #湿度
     weather_dict["weather"] = weather_data["weather"][0]["description"] #天気条件
+    weather_dict["icon"] = weather_data["weather"][0]["icon"] #天気アイコンID
     return weather_dict 
 
 def getLedStatus():
@@ -80,23 +84,32 @@ def ledControl(param):
     lineNotify(f'LEDが{param}されました')
     return param
 
-def toDictsFromByte(bytes_data):
-    """Change Bytes_Data to dicts_data"""
-    str_data = bytes_data.decode('utf-8')   #データをstr型に変換
-    list_data = str_data.split('=')         #データをリスト型に変換
-    return {list_data[0]:list_data[1]}      #データを辞書型に変換
-    
-def generateTagFromRecord(records):
-    """#取得したレコードからHTMLタグを生成"""
-    text = ""   #HTML生成テキストの初期化
+def toDictsFromBody(bytes_data):
+    """Change Bytes_Data(Request body) to dicts_data"""
+    dict_data = {}
+    str_data = bytes_data.decode('utf-8')       #データをstr型に変換
+    for data in str_data.split('&'):            #データをリスト型に変換
+        list_data = data.split('=')             #データをリスト型に変換
+        dict_data[list_data[0]]=list_data[1]    #データを辞書型に変換
+    return dict_data
+
+def generateTagFromRecord(records, *tmpl_name):
+    """取得したレコードをHTMLテンプレートにレンダリング
+        record:DBから取得したデータ（***型）
+        tmpl_name:レンダリングしたいテンプレートを指定（html型）
+    """
+    #テンプレート読み込み(編集中)
+    # env = Environment(loader=FileSystemLoader('./', encoding='utf8'))
+    # tmpl = env.get_template(tmpl_name)
+    # rendered_html = tmpl.render()   #テンプレートのレンダリング
+    text = ""
     text += """
     <tr>
-    <th>アクセス日時</th>
-    <th>ユーザー名</th>
-    <th>送信内容</th>
-    <th>アクセス元IP</th>
-    </tr>
-    """
+        <th>アクセス日時</th>
+        <th>ユーザー名</th>
+        <th>送信内容</th>
+        <th>アクセス元IP</th>
+    </tr> """
     for record in records:
         text += "<tr>"
         text += "<td>"+str(record.time)+"</td>"
@@ -110,7 +123,7 @@ class MyHTTPReqHandler(BaseHTTPRequestHandler):
     """Processing when GET&POST communication is executed"""
     def do_GET(self):
         if self.path == "/":
-            self.path = "./index.html"
+            self.path = "index.html"
         try:
             split_path = os.path.splitext(self.path)
             request_extension = split_path[1]
@@ -124,11 +137,13 @@ class MyHTTPReqHandler(BaseHTTPRequestHandler):
         else:
             self.send_response(200)
             self.end_headers()
-            if (request_extension == '.html'):
+
+            if self.path == "/top.html":
                 #天気API情報による書き換え
                 weather_dict = getWheatherInfo("Tokyo")
                 for key, value in weather_dict.items():
                     file = file.replace('{'+key+'}',str(value))
+
                 #DB登録情報の抽出
                 records = session.query(History).order_by(desc(History.time)).limit(10).all() 
                 file = file.replace('{database}',generateTagFromRecord(records))
@@ -138,23 +153,42 @@ class MyHTTPReqHandler(BaseHTTPRequestHandler):
     def do_POST(self):
         self.send_response(200) #POSTリクエストの受信成功を返答（ターミナルにも記載）
         content_len = int(self.headers.get('content-length'))      #ヘッダーからボディーのデータ数を抽出
-        param_bytes = self.rfile.read(content_len)       #ボディーのデータ(Bytes型)を抽出
-        param_dict = toDictsFromByte(param_bytes)
-        
-        #Databaseへの情報登録
-        history = History(0, "takahito.okuyama", "Mac", datetime.datetime.now(), param_dict["params"])
-        session.add(history)
-        session.commit()
+        param_bytes = self.rfile.read(content_len)                 #ボディーのデータ(Bytes型)を抽出
+        param_dict = toDictsFromBody(param_bytes)
+        refer = urllib.parse.urlparse(self.headers.get('Referer'))
 
-        #LEDのON/OFF操作
-        ledControl(param_dict["params"])
+        if(refer.path == "/"):
+            #ログインの入力情報とデータベースとの照合（ユーザー認証）
+            try:
+                record = session.query(User).filter(User.user==param_dict["user_id"]).one()
+            except NoResultFound:
+                #例外が発生した場合はexception種類に応じて追記
+                print("USER IDに該当するデータが見つかりませんでした。")
+                return
+            else:
+                #ユーザー認証が成功した場合の処理
+                if record.password == param_dict["user_password"]:
+                    print("Successfully logged in.")
+                    res_body = "login_success"
+                #ユーザー認証が成功した場合の処理
+                else:
+                    print("The login attempt failed. Password is invalid")
+                    res_body = "login_error"
+        else:
+            #Databaseへの情報登録
+            history = History(0, "takahito.okuyama", "Mac", datetime.datetime.now(), param_dict["params"])
+            session.add(history)
+            session.commit()
 
-        #レスポンス
+            #LEDのON/OFF操作
+            ledControl(param_dict["params"])
+
+            #レスポンス
+            records = session.query(History).order_by(desc(History.time)).limit(10).all()
+            res_body = generateTagFromRecord(records,"accesslist.html")
         self.send_header("Access-Control-Allow-Origin", '*')
         self.end_headers()
-        records = session.query(History).order_by(desc(History.time)).limit(10).all()
-        text = generateTagFromRecord(records)
-        self.wfile.write(text.encode())
+        self.wfile.write(res_body.encode())
 
 if __name__ == "__main__":
     server = HTTPServer(("", PORT), MyHTTPReqHandler)
