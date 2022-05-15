@@ -3,7 +3,7 @@ let ledoff_btn = document.getElementById("ledoff");
 const LED_ON = "ON";
 const LED_OFF = "OFF";
 
-url = "http://192.168.11.11";
+url = "http://192.168.11.21";
 
 const ledCssChange = (ledstatus) => {
   /* ボタンを押した時に適用CSSを変更メソッド */
